@@ -1,5 +1,13 @@
 use std::collections::HashMap;
+use serde::Serialize;
 use std::env;
+
+#[derive(Debug, Serialize)]
+struct Xor {
+    word_a: String,
+    word_b: String,
+    xor_word: String,
+}
 
 fn create_word_to_index_map(words: &[&str]) -> HashMap<String, u16> {
     words
@@ -36,17 +44,17 @@ fn main() {
         std::process::exit(1);
     }
 
+    let word_a = args[1].to_string();
+    let word_b = args[2].to_string();
+
     let bip39_words = include_str!("bip39-english.txt")
         .lines()
         .collect::<Vec<_>>();
 
-    let bits1 = get_bip39_index_by_word(&bip39_words, &args[1]);
-    println!("Word 1 bits: {:011b}", bits1);
-    let bits2 = get_bip39_index_by_word(&bip39_words, &args[2]);
-    println!("Word 2 bits: {:011b}", bits2);
+    let bits1 = get_bip39_index_by_word(&bip39_words, &word_a.as_str());
+    let bits2 = get_bip39_index_by_word(&bip39_words, &word_b.as_str());
 
     let xor_result = xor_bits(bits1, bits2);
-    println!("XOR result: {:011b}", xor_result);
 
     let xor_word = match bip39_words.get(xor_result as usize) {
         Some(&word) => word,
@@ -56,7 +64,14 @@ fn main() {
         }
     };
 
-    println!("XOR Word: {}", xor_word);
+    let mut xor_result = vec![];
+    xor_result.push(Xor {
+        word_a,
+        word_b,
+        xor_word: xor_word.to_string(),
+    });
+
+    println!("Xor: {}", serde_json::to_string_pretty(&xor_result).unwrap());
 }
 
 #[cfg(test)]
