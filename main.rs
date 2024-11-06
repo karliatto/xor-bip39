@@ -1,9 +1,20 @@
-use std::env;
-use xor::{Xor, get_bip39_index_by_word, xor_bits};
+use clap::Parser;
+use std::io::Error;
+use xor::{get_bip39_index_by_word, xor_bits, Xor};
 mod xor;
 
-fn get_xor(word_a: &str, word_b: &str) -> Vec<Xor> {
+#[derive(Parser)]
+#[command(name = "Bitcoin bip39 xor")]
+#[command(version = "1.0")]
+#[command(about = "Get the xor of 2 bip39 words", long_about = None)]
+struct Cli {
+    #[arg(required = true, help = "(string, required) english bip39 word")]
+    word_a: String,
+    #[arg(required = true, help = "(string, required) english bip39 word")]
+    word_b: String,
+}
 
+fn get_xor(word_a: &str, word_b: &str) -> Result<String, Error> {
     let bip39_words = include_str!("bip39-english.txt")
         .lines()
         .collect::<Vec<_>>();
@@ -27,25 +38,16 @@ fn get_xor(word_a: &str, word_b: &str) -> Vec<Xor> {
         word_b: word_b.to_string(),
         xor_word: xor_word.to_string(),
     });
-    xor_result
+    Ok(serde_json::to_string_pretty(&xor_result)?)
 }
-
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        eprintln!("Usage: {} <word1> <word2>", args[0]);
-        std::process::exit(1);
+    let cli = Cli::parse();
+    match get_xor(cli.word_a.as_str(), cli.word_b.as_str()) {
+        Ok(json) => println!("{}", json),
+        Err(e) => eprintln!("{}", e),
     }
-
-    let word_a = &args[1];
-    let word_b = &args[2];
-
-    let xor_result = get_xor(word_a.as_str(), word_b.as_str());
-
-    println!("Xor: {}", serde_json::to_string_pretty(&xor_result).unwrap());
 }
-
 
 #[cfg(test)]
 mod tests {
